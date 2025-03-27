@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="nauti_pilot" type="pilot.py" name="pilot"/>
+    <node pkg="nauti_pilot" type="controller.py" name="controller"/>
+</launch>
