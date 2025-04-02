@@ -172,10 +172,8 @@ class Controller(object):
             timeout = time.time() + duration
             msg = Command()
 
-            if pitch_target > 0:
-                msg.pitch = thrust
-            if yaw_target > 0:
-                msg.yaw = thrust
+            msg.pitch = thrust
+            msg.yaw = thrust * (-1 if target_angles[2] < 0 else 1)
 
             while not(time.time() > timeout):
                 self.cmd.publish(msg)
@@ -184,75 +182,90 @@ class Controller(object):
     def thurst_and_orientation(self):
         pass
 
+    def do_square(self, sideA_length=1, sideB_length=1, thrust=0.5, right=True):
+        sideA_duration = sideA_length * 10
+        sideB_duration = sideB_length * 10
+
+        self.thrust(sideA_duration, thrust) # Leg 1
+        self.to_orientation(target_angles=[0,0,90], duration=0.85, thrust=thrust)
+        self.thrust(sideB_duration, thrust) # Leg 2
+        self.to_orientation(target_angles=[0,0,90], duration=0.85, thrust=thrust)
+        self.thrust(sideA_duration, thrust) # Leg 3
+        self.to_orientation(target_angles=[0,0,90], duration=0.85, thrust=thrust)
+        self.thrust(sideB_duration, thrust) # Leg 4
+        self.to_orientation(target_angles=[0,0,90], duration=0.85, thrust=thrust)
+
     # def do_square(self, sideA_length=1, sideB_length=1, thrust=0.5, right=True):
     #     sideA_duration = sideA_length * 5
     #     sideB_duration = sideB_length * 5
-
-    #     self.thrust(sideA_duration, thrust) # Leg 1
-    #     self.to_orientation(target_angles=[0,0,1], duration=1.5, thrust=thrust)
-    #     self.thrust(sideB_duration, thrust) # Leg 2
-    #     self.to_orientation(target_angles=[0,0,1], duration=1.5, thrust=thrust)
-    #     self.thrust(sideA_duration, thrust) # Leg 3
-    #     self.to_orientation(target_angles=[0,0,1], duration=1.5, thrust=thrust)
-    #     self.thrust(sideB_duration, thrust) # Leg 4
-    #     self.to_orientation(target_angles=[0,0,1], duration=1.5, thrust=thrust)
-
-    def do_square(self, sideA_length=1, sideB_length=1, thrust=0.5, right=True):
-        sideA_duration = sideA_length * 5
-        sideB_duration = sideB_length * 5
         
-        def execute_leg(duration, target_thrust, target_yaw):
-            timeout = time.time() + duration
-            while not(time.time() > timeout):
-                current_time = time.time()
+    #     def execute_leg(duration, target_thrust, target_yaw):
+    #         timeout = time.time() + duration
+    #         while not(time.time() > timeout):
+    #             current_time = time.time()
                 
-                # Calculate thrust error and control
-                thrust_error = target_thrust - self.current_thrust  # You'll need to track current thrust
-                self.surge_pid.update(thrust_error, current_time)
-                thrust_control = self.surge_pid.control
+    #             # Calculate thrust error and control
+    #             thrust_error = target_thrust - self.current_thrust  # You'll need to track current thrust
+    #             self.surge_pid.update(thrust_error, current_time)
+    #             thrust_control = self.surge_pid.control
                 
-                # Calculate yaw error and control
-                yaw_error = angle_diff(self.current_angles[2], target_yaw)
-                self.yaw_pid.update(yaw_error, current_time)
-                yaw_control = self.yaw_pid.control
+    #             # Calculate yaw error and control
+    #             yaw_error = angle_diff(self.current_angles[2], target_yaw)
+    #             self.yaw_pid.update(yaw_error, current_time)
+    #             yaw_control = self.yaw_pid.control
                 
-                # Create and publish command
-                msg = Command()
-                msg.throttle = max(min(thrust_control, 1.0), -1.0)  # Clamp between -1 and 1
-                msg.yaw = max(min(yaw_control, 1.0), -1.0)  # Clamp between -1 and 1
-                self.cmd.publish(msg)
-                self.rate.sleep()
+    #             # Create and publish command
+    #             msg = Command()
+    #             msg.throttle = max(min(thrust_control, 1.0), -1.0)  # Clamp between -1 and 1
+    #             msg.yaw = max(min(yaw_control, 1.0), -1.0)  # Clamp between -1 and 1
+    #             self.cmd.publish(msg)
+    #             self.rate.sleep()
 
-        current_yaw = self.current_angles[2]
-        yaw_increment = pi/2 if right else -pi/2
-        execute_leg(sideA_duration, thrust, current_yaw)
+    #     current_yaw = self.current_angles[2]
+    #     yaw_increment = pi/2 if right else -pi/2
+    #     execute_leg(sideA_duration, thrust, current_yaw)
         
-        current_yaw += yaw_increment
-        execute_leg(sideB_duration, thrust, current_yaw)
+    #     current_yaw += yaw_increment
+    #     execute_leg(sideB_duration, thrust, current_yaw)
         
-        current_yaw += yaw_increment
-        execute_leg(sideA_duration, thrust, current_yaw)
+    #     current_yaw += yaw_increment
+    #     execute_leg(sideA_duration, thrust, current_yaw)
         
-        current_yaw += yaw_increment
-        execute_leg(sideB_duration, thrust, current_yaw)
+    #     current_yaw += yaw_increment
+    #     execute_leg(sideB_duration, thrust, current_yaw)
         
-        current_yaw += yaw_increment
-        execute_leg(1.5, 0, current_yaw)
+    #     current_yaw += yaw_increment
+    #     execute_leg(1.5, 0, current_yaw)
 
-    def do_circle(self, duration=20, radius=0, thrust=0.5):
+    def do_circle(self, duration=1000, radius=0, thrust=15):
         #TODO radius not yet supported.
         timeout = time.time() + duration
         msg = Command()
-        msg.throttle = thrust/2
-        msg.yaw = thrust
+        msg.throttle = thrust
+        while not (time.time() > 10):
+            self.cmd.publish(msg)
+            self.rate.sleep()
+        msg.yaw = thrust / 45
 
         while not(time.time() > timeout):
             self.cmd.publish(msg)
             self.rate.sleep()
 
+    def do_lawn_moving(self, n=5, thrust=20):
+        for i in range(n):
+            self.thrust(10, thrust=thrust)
+            self.to_orientation([0, 0, -90], duration=0.85, thrust=thrust / 40)
+            self.thrust(2, thrust=thrust)
+            self.to_orientation([0, 0, -90], duration=0.85, thrust=thrust / 40)
+            self.thrust(10, thrust=thrust)
+            self.to_orientation([0, 0, 90], duration=0.85, thrust=thrust / 40)
+            self.thrust(2, thrust=thrust)
+            self.to_orientation([0, 0, 90], duration=0.85, thrust=thrust / 40)
+
 if __name__ == '__main__':
     try:
         controller = Controller()
-        controller.do_square()
+        # controller.do_square()
+        controller.do_lawn_moving()
     except rospy.ROSInterruptException:
         pass
