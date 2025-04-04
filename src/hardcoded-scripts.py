@@ -38,8 +38,8 @@ class Controller(object):
         rospy.Subscriber('/mavros/imu/data', Imu, self.imu_callback)
         self.current_thrust = 0.0
 
-        self.surge_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3) # surge
-        self.yaw_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3) # yaw
+        self.surge_pid = PID(kp=4, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3) # surge
+        self.yaw_pid = PID(kp=4, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3) # yaw
 
         rospy.loginfo('Controller initialized')
 
@@ -196,8 +196,8 @@ class Controller(object):
         self.to_orientation(target_angles=[0,0,90], duration=0.85, thrust=thrust)
 
     # def do_square(self, sideA_length=1, sideB_length=1, thrust=0.5, right=True):
-    #     sideA_duration = sideA_length * 5
-    #     sideB_duration = sideB_length * 5
+    #     sideA_duration = sideA_length * 10
+    #     sideB_duration = sideB_length * 10
         
     #     def execute_leg(duration, target_thrust, target_yaw):
     #         timeout = time.time() + duration
@@ -237,7 +237,7 @@ class Controller(object):
     #     current_yaw += yaw_increment
     #     execute_leg(1.5, 0, current_yaw)
 
-    def do_circle(self, duration=1000, radius=0, thrust=15):
+    def do_circle(self, duration=1000, radius=0, thrust=0.5):
         #TODO radius not yet supported.
         timeout = time.time() + duration
         msg = Command()
@@ -251,21 +251,24 @@ class Controller(object):
             self.cmd.publish(msg)
             self.rate.sleep()
 
-    def do_lawn_moving(self, n=5, thrust=20):
+    def do_lawn_moving(self, n=5, thrust=0.5):
         for i in range(n):
-            self.thrust(10, thrust=thrust)
-            self.to_orientation([0, 0, -90], duration=0.85, thrust=thrust / 40)
+            self.thrust(5, thrust=thrust)
+            self.to_orientation([0, 0, -90], duration=1, thrust=thrust)
             self.thrust(2, thrust=thrust)
-            self.to_orientation([0, 0, -90], duration=0.85, thrust=thrust / 40)
-            self.thrust(10, thrust=thrust)
-            self.to_orientation([0, 0, 90], duration=0.85, thrust=thrust / 40)
+            self.to_orientation([0, 0, -90], duration=1, thrust=thrust)
+            self.thrust(5, thrust=thrust)
+            self.to_orientation([0, 0, 90], duration=1, thrust=thrust)
             self.thrust(2, thrust=thrust)
-            self.to_orientation([0, 0, 90], duration=0.85, thrust=thrust / 40)
+            self.to_orientation([0, 0, 90], duration=1, thrust=thrust)
+    
+    def do_straight_line(self, thrust=0.5, duration=10):
+        self.thrust(duration, thrust=thrust)
 
 if __name__ == '__main__':
     try:
         controller = Controller()
-        # controller.do_square()
-        controller.do_lawn_moving()
+        controller.do_square(thrust=0.75)
+        # controller.do_lawn_moving()
     except rospy.ROSInterruptException:
         pass
