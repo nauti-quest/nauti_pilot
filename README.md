@@ -32,3 +32,6 @@ python3 pilot.py
 cd <parent_directory>/<workspace>/src/nauti_pilot/src/
 python3 hardcoded-scripts.py
 ```
+
+## Support
+For issues and questions, please open an issue in this repository.
